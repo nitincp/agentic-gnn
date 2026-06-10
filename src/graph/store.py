@@ -4,7 +4,7 @@ from typing import Any
 
 import kuzu
 
-from .schema import NodeType, EdgeType
+from .schema import EdgeType, NodeType
 
 
 class GraphStore:
@@ -83,12 +83,10 @@ class GraphStore:
             parameters={"src_id": src_id, "dst_id": dst_id},
         )
 
-    def query(self, cypher: str, parameters: dict[str, Any] | None = None) -> list[dict]:
+    def query(self, cypher: str, parameters: dict[str, Any] | None = None) -> list[Any]:
         result = self._conn.execute(cypher, parameters=parameters or {})
-        rows = []
-        while result.has_next():
-            rows.append(result.get_next())
-        return rows
+        assert isinstance(result, kuzu.QueryResult)
+        return result.get_all()
 
     def close(self) -> None:
         self._conn.close()

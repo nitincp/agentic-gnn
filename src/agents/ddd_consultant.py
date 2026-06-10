@@ -33,7 +33,7 @@ class DDDConsultantAgent(BaseAgent):
     async def invoke(self, message: str, context: dict[str, Any]) -> AgentOutput:
         self._ensure_initialized()
 
-        from langchain_core.messages import HumanMessage, AIMessage
+        from langchain_core.messages import AIMessage, HumanMessage
 
         self._history.append(HumanMessage(content=message))
 
@@ -44,7 +44,8 @@ class DDDConsultantAgent(BaseAgent):
             messages=[{"role": "user", "content": message}],
         )
 
-        content = response.content[0].text
+        text_blocks = [b for b in response.content if isinstance(b, anthropic.types.TextBlock)]
+        content = text_blocks[0].text if text_blocks else ""
         self._history.append(AIMessage(content=content))
 
         # TODO: parse structured DDD artifacts from content for graph writes

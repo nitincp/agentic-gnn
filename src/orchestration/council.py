@@ -6,15 +6,14 @@ low-confidence outputs flagged for council review.
 """
 
 from typing import Any, Literal
-from typing_extensions import TypedDict
 
 import anthropic
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
+from typing_extensions import TypedDict
 
 from src.agents import DDDConsultantAgent, DeveloperAgent, TestEngineerAgent
 from src.agents.base import AgentOutput
 from src.graph.store import GraphStore
-
 
 CONFIDENCE_THRESHOLD = 0.6
 
@@ -101,7 +100,8 @@ class Council:
 
     async def _commit_to_graph(self, state: CouncilState) -> CouncilState:
         conflicts = []
-        for output in [state["ddd_output"], state["developer_output"], state["test_engineer_output"]]:
+        outputs = [state["ddd_output"], state["developer_output"], state["test_engineer_output"]]
+        for output in outputs:
             if output is None:
                 continue
             if output.confidence < CONFIDENCE_THRESHOLD:
@@ -119,7 +119,7 @@ class Council:
         if state["test_engineer_output"]:
             parts.append(f"**Test Engineer:**\n{state['test_engineer_output'].content}")
         if state["conflicts"]:
-            parts.append(f"**Council flags:**\n" + "\n".join(state["conflicts"]))
+            parts.append("**Council flags:**\n" + "\n".join(state["conflicts"]))
         return {**state, "response": "\n\n---\n\n".join(parts)}
 
     async def invoke(

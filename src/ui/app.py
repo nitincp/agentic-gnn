@@ -5,8 +5,8 @@ from typing import Literal
 import chainlit as cl
 from dotenv import load_dotenv
 
-from src.graph.store import GraphStore
 from src.graph.gnn import GNNEnrichment
+from src.graph.store import GraphStore
 from src.orchestration.council import Council
 
 load_dotenv()
@@ -47,7 +47,7 @@ async def on_message(message: cl.Message) -> None:
     council = get_council()
 
     # Simple flow detection from message prefix
-    flow: Literal["top_down", "bottom_up"] = cl.user_session.get("flow", "top_down")
+    flow: Literal["top_down", "bottom_up"] = cl.user_session.get("flow") or "top_down"
     content = message.content.strip()
 
     if content.lower().startswith("flow:"):

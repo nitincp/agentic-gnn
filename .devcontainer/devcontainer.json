@@ -32,6 +32,7 @@
         "python.analysis.typeCheckingMode": "basic",
         "python.analysis.autoImportCompletions": true,
         "python.analysis.diagnosticMode": "workspace",
+        "python.analysis.extraPaths": ["/home/vscode/.local/lib/python3.10/site-packages"],
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.codeActionsOnSave": {
