@@ -1,0 +1,62 @@
+{
+  "name": "agentic-gnn",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+  "mounts": [
+    "source=/usr/bin/python3.10,target=/usr/bin/python3.10,type=bind,readonly",
+    "source=/usr/lib/python3.10,target=/usr/lib/python3.10,type=bind,readonly",
+    "source=/usr/lib/python3,target=/usr/lib/python3,type=bind,readonly",
+    "type=bind,source=${env:HOME}/projects/.secrets,target=/secrets,readonly"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+        "charliermarsh.ruff",
+        "ms-python.pytest",
+        "ms-toolsai.jupyter",
+        "ms-toolsai.vscode-jupyter-cell-tags",
+        "hediet.vscode-drawio",
+        "alexkrechik.cucumberautocomplete",
+        "tamasfe.even-better-toml",
+        "mikestead.dotenv",
+        "eamodio.gitlens",
+        "Anthropic.claude-code"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/bin/python3.10",
+        "python.terminal.activateEnvironment": false,
+        "python.analysis.typeCheckingMode": "basic",
+        "python.analysis.autoImportCompletions": true,
+        "python.analysis.diagnosticMode": "workspace",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.ruff": "explicit",
+          "source.organizeImports.ruff": "explicit"
+        },
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        },
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests"],
+        "python.testing.unittestEnabled": false,
+        "cucumberautocomplete.steps": ["src/**/*.py"],
+        "cucumberautocomplete.syncfeatures": "tests/**/*.feature",
+        "editor.rulers": [100],
+        "editor.tabSize": 4,
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "files.associations": {
+          "*.feature": "cucumber",
+          "*.env*": "dotenv"
+        }
+      }
+    }
+  },
+  "postCreateCommand": ". /secrets/secrets.env && python3.10 -m pip install -e '/workspace/.[dev]'",
+  "forwardPorts": [8000]
+}

@@ -1,0 +1,19 @@
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu-22.04
+    volumes:
+      - .:/workspace
+      - kuzu-data:/workspace/data/kuzu
+    working_dir: /workspace
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - MODEL_PROVIDER=${MODEL_PROVIDER:-anthropic}
+      - MODEL_NAME=${MODEL_NAME:-claude-sonnet-4-6}
+    ports:
+      - "8000:8000"
+    command: chainlit run src/ui/app.py --port 8000 --host 0.0.0.0
+    stdin_open: true
+    tty: true
+
+volumes:
+  kuzu-data:

@@ -1,0 +1,53 @@
+[project]
+name = "agentic-gnn"
+version = "0.1.0"
+description = "Agentic GNN — council-based SDLC automation with GraphRAG"
+requires-python = ">=3.10"
+dependencies = [
+    # LLM
+    "anthropic>=0.30.0",
+    "litellm>=1.40.0",
+    # Agent orchestration
+    "langgraph>=0.2.0",
+    "langchain-core>=0.2.0",
+    # Graph store
+    "kuzu>=0.5.0",
+    # Code parsing
+    "tree-sitter>=0.22.0",
+    "tree-sitter-python>=0.21.0",
+    # UI
+    "chainlit>=1.1.0",
+    # Utilities
+    "pydantic>=2.7.0",
+    "python-dotenv>=1.0.0",
+    "tenacity>=8.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.4.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+]
+gnn = [
+    "torch>=2.3.0",
+    "torch-geometric>=2.5.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
