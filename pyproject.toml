@@ -1,7 +1,7 @@
 [project]
-name = "consilium"
+name = "senatus"
 version = "0.1.0"
-description = "Consilium — connected council for SDLC automation with GNN-enriched knowledge graph"
+description = "Senatus — Roman council of deliberation for SDLC automation with GNN-enriched knowledge graph"
 requires-python = ">=3.10"
 dependencies = [
     # LLM

@@ -1,6 +1,6 @@
-# Consilium
+# Senatus
 
-**Connected council for SDLC automation.**
+**Council of deliberation for SDLC automation.**
 
 A trio of LLM agents — DDD Consultant, Developer, Test Engineer — deliberate over your requirements and write structured artifacts to a knowledge graph.
 

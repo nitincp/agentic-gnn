@@ -35,7 +35,7 @@ async def on_start() -> None:
     get_council()
     await cl.Message(
         content=(
-            "Welcome to **Consilium** — your connected council for SDLC automation.\n\n"
+            "Welcome to **Senatus** — council of deliberation for SDLC automation.\n\n"
             "Describe your requirements to start top-down DDD modelling, or upload "
             "a codebase/Gherkin files to start bottom-up analysis.\n\n"
             "Type `flow: bottom_up` at any point to switch modes."

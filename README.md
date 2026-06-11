@@ -1,4 +1,4 @@
-# Consilium — Connected Council for SDLC Automation
+# Senatus — Council of Deliberation for SDLC Automation
 
 A council of LLM agents that automates SDLC artifact generation (requirements → DDD model → Gherkin tests → code structure) and stores everything in a knowledge graph. A GNN enrichment pass (in progress) adds embedding-based retrieval on top.
 
