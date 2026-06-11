@@ -2,7 +2,9 @@
 data/
 __pycache__/
 *.pyc
+*.pyo
 .venv/
 .ruff_cache/
 .pytest_cache/
 dist/
+.chainlit/
