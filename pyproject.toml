@@ -1,7 +1,7 @@
 [project]
-name = "agentic-gnn"
+name = "consilium"
 version = "0.1.0"
-description = "Agentic GNN — council-based SDLC automation with GraphRAG"
+description = "Consilium — connected council for SDLC automation with GNN-enriched knowledge graph"
 requires-python = ">=3.10"
 dependencies = [
     # LLM
