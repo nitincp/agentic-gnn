@@ -12,7 +12,7 @@ from langgraph.graph import END, StateGraph
 from typing_extensions import TypedDict
 
 from src.agents import DDDConsultantAgent, DeveloperAgent, TestEngineerAgent
-from src.agents.base import AgentOutput
+from src.agents.base import AgentOutput, SessionUsage
 from src.graph.store import GraphStore
 
 CONFIDENCE_THRESHOLD = 0.6
@@ -98,16 +98,61 @@ class Council:
         )
         return {**state, "test_engineer_output": output}
 
+    def _write_graph_writes(self, graph_writes: list[dict], conflicts: list[str]) -> None:
+        from src.graph.schema import EdgeType, NodeType
+
+        for write in graph_writes:
+            kind = write.get("kind")
+            try:
+                if kind == "node":
+                    node_type_str = write.get("node_type")
+                    node_type = NodeType(node_type_str)
+                    raw_props = {k: v for k, v in write.items() if k not in ("kind", "node_type")}
+                    # Filter to only columns that exist in the Kuzu schema
+                    allowed = self._store._NODE_PROPS.get(node_type)
+                    props = (
+                        {k: v for k, v in raw_props.items() if k in allowed}
+                        if allowed
+                        else raw_props
+                    )
+
+                    # Conflict detection: check each prop individually
+                    for key, new_val in props.items():
+                        if key == "id":
+                            continue
+                        rows = self._store.query(
+                            f"MATCH (n:{node_type} {{id: $id}}) RETURN n.{key}",
+                            {"id": props["id"]},
+                        )
+                        if rows and rows[0][0] != new_val and rows[0][0] is not None:
+                            conflicts.append(
+                                f"Conflict on {node_type} '{props['id']}' "
+                                f"field '{key}': '{rows[0][0]}' → '{new_val}'"
+                            )
+                    self._store.write_node(node_type, props)
+
+                elif kind == "edge":
+                    self._store.write_edge(
+                        edge_type=EdgeType(write["edge_type"]),
+                        src_type=NodeType(write["src_type"]),
+                        src_id=write["src_id"],
+                        dst_type=NodeType(write["dst_type"]),
+                        dst_id=write["dst_id"],
+                    )
+            except Exception as exc:
+                kind_label = write.get("node_type") or write.get("edge_type")
+                conflicts.append(f"Write error ({kind_label}): {exc}")
+
     async def _commit_to_graph(self, state: CouncilState) -> CouncilState:
-        conflicts = []
+        conflicts: list[str] = []
         outputs = [state["ddd_output"], state["developer_output"], state["test_engineer_output"]]
         for output in outputs:
             if output is None:
                 continue
             if output.confidence < CONFIDENCE_THRESHOLD:
-                conflicts.append(f"Low confidence ({output.confidence:.2f}) — flagged for review")
+                conflicts.append(f"Low confidence ({output.confidence:.2f}) — skipped graph write")
                 continue
-            # TODO: write output.graph_writes to self._store
+            self._write_graph_writes(output.graph_writes, conflicts)
         return {**state, "conflicts": conflicts}
 
     async def _synthesize(self, state: CouncilState) -> CouncilState:
@@ -120,6 +165,16 @@ class Council:
             parts.append(f"**Test Engineer:**\n{state['test_engineer_output'].content}")
         if state["conflicts"]:
             parts.append("**Council flags:**\n" + "\n".join(state["conflicts"]))
+
+        # Cost footer
+        session = SessionUsage()
+        outputs = [state["ddd_output"], state["developer_output"], state["test_engineer_output"]]
+        for output in outputs:
+            if output and output.usage:
+                session.add(output.usage)
+        if session.turns:
+            parts.append(f"**Token usage (this turn):**\n{session.summary()}")
+
         return {**state, "response": "\n\n---\n\n".join(parts)}
 
     async def invoke(

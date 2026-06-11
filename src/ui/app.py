@@ -9,7 +9,8 @@ from src.graph.gnn import GNNEnrichment
 from src.graph.store import GraphStore
 from src.orchestration.council import Council
 
-load_dotenv()
+load_dotenv("/secrets/secrets.env")
+load_dotenv()  # project .env can override non-sensitive defaults
 
 
 def get_council() -> Council:
@@ -34,9 +35,9 @@ async def on_start() -> None:
     get_council()
     await cl.Message(
         content=(
-            "Welcome. I'm your Library Management System assistant.\n\n"
-            "Tell me about your requirements, or upload a codebase/Gherkin files "
-            "to start bottom-up analysis.\n\n"
+            "Welcome to **Consilium** — your connected council for SDLC automation.\n\n"
+            "Describe your requirements to start top-down DDD modelling, or upload "
+            "a codebase/Gherkin files to start bottom-up analysis.\n\n"
             "Type `flow: bottom_up` at any point to switch modes."
         )
     ).send()

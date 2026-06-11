@@ -12,7 +12,7 @@ class GraphStore:
 
     def __init__(self, db_path: str | None = None) -> None:
         path = db_path or os.getenv("KUZU_DB_PATH", "data/kuzu")
-        Path(path).mkdir(parents=True, exist_ok=True)
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
         self._db = kuzu.Database(path)
         self._conn = kuzu.Connection(self._db)
         self._init_schema()
@@ -59,13 +59,50 @@ class GraphStore:
             except Exception:
                 pass  # table already exists
 
+    # Allowed node properties per type — guards against extra relational fields
+    _NODE_PROPS: dict[str, set[str]] = {
+        NodeType.REQUIREMENT: {"id", "title", "body", "source"},
+        NodeType.BOUNDED_CONTEXT: {"id", "name", "description"},
+        NodeType.AGGREGATE: {"id", "name", "bounded_context"},
+        NodeType.ENTITY: {"id", "name", "aggregate"},
+        NodeType.VALUE_OBJECT: {"id", "name", "aggregate"},
+        NodeType.DOMAIN_EVENT: {"id", "name", "aggregate"},
+        NodeType.GLOSSARY_TERM: {"id", "term", "definition"},
+        NodeType.GHERKIN_FEATURE: {"id", "title", "file_path"},
+        NodeType.GHERKIN_SCENARIO: {"id", "title", "steps"},
+        NodeType.CODE_MODULE: {"id", "path", "language"},
+        NodeType.CODE_CLASS: {"id", "name", "module"},
+        NodeType.CODE_FUNCTION: {"id", "name", "module"},
+    }
+
+    def _run(self, cypher: str, parameters: dict[str, Any] | None = None) -> list[Any]:
+        result = self._conn.execute(cypher, parameters=parameters or {})
+        assert isinstance(result, kuzu.QueryResult)
+        return result.get_all()
+
     def write_node(self, node_type: NodeType, properties: dict[str, Any]) -> None:
-        cols = ", ".join(properties.keys())
-        placeholders = ", ".join(f"${k}" for k in properties.keys())
-        self._conn.execute(
-            f"MERGE (n:{node_type} {{{cols}}}) SET n = ${{{placeholders}}}",
-            parameters=properties,
+        allowed = self._NODE_PROPS.get(node_type)
+        if allowed:
+            properties = {k: v for k, v in properties.items() if k in allowed}
+        node_id = properties["id"]
+        exists = self._run(
+            f"MATCH (n:{node_type} {{id: $id}}) RETURN count(n)",
+            {"id": node_id},
         )
+        if exists and exists[0][0] > 0:
+            for key, val in properties.items():
+                if key == "id":
+                    continue
+                self._run(
+                    f"MATCH (n:{node_type} {{id: $id}}) SET n.{key} = $val",
+                    {"id": node_id, "val": val},
+                )
+        else:
+            # Kuzu named params don't work inside inline node literals — use positional
+            keys = list(properties.keys())
+            cols = ", ".join(f"{k}: ${i + 1}" for i, k in enumerate(keys))
+            params = {str(i + 1): properties[k] for i, k in enumerate(keys)}
+            self._run(f"CREATE (:{node_type} {{{cols}}})", params)
 
     def write_edge(
         self,
@@ -75,18 +112,21 @@ class GraphStore:
         dst_type: NodeType,
         dst_id: str,
     ) -> None:
-        self._conn.execute(
-            f"""
-            MATCH (a:{src_type} {{id: $src_id}}), (b:{dst_type} {{id: $dst_id}})
-            MERGE (a)-[:{edge_type}]->(b)
-            """,
-            parameters={"src_id": src_id, "dst_id": dst_id},
+        exists = self._run(
+            f"MATCH (a:{src_type} {{id: $src_id}})-[r:{edge_type}]->(b:{dst_type} {{id: $dst_id}})"
+            " RETURN count(r)",
+            {"src_id": src_id, "dst_id": dst_id},
+        )
+        if exists and exists[0][0] > 0:
+            return
+        self._run(
+            f"MATCH (a:{src_type} {{id: $src_id}}), (b:{dst_type} {{id: $dst_id}})"
+            f" CREATE (a)-[:{edge_type}]->(b)",
+            {"src_id": src_id, "dst_id": dst_id},
         )
 
     def query(self, cypher: str, parameters: dict[str, Any] | None = None) -> list[Any]:
-        result = self._conn.execute(cypher, parameters=parameters or {})
-        assert isinstance(result, kuzu.QueryResult)
-        return result.get_all()
+        return self._run(cypher, parameters)
 
     def close(self) -> None:
         self._conn.close()

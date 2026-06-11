@@ -58,6 +58,6 @@
       }
     }
   },
-  "postCreateCommand": ". /secrets/secrets.env && python3.10 -m pip install -e '/workspace/.[dev]'",
+  "postCreateCommand": "bash .devcontainer/bootstrap-secrets.sh && python3.10 -m pip install -e '/workspace/.[dev]'",
   "forwardPorts": [8000]
 }
